@@ -1,0 +1,12 @@
+{
+  "api_id": 12345678,
+  "api_hash": "your_telegram_api_hash_here",
+  "bot_token": "your_bot_token_here",
+  "main_owner_id": 123456789,
+  "brand_name": "𝗦𝗜𝗗",
+  "max_slots": 25,
+  "banner_photo": "",
+  "auto_promote_title": "Sid Admin",
+  "join_delay_sec": 4,
+  "watchdog_interval_min": 30
+}

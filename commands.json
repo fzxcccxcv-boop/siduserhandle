@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "ALL:.welcome": {
+      "trigger": ".welcome",
+      "scope": "ALL",
+      "reply": "🌸 Welcome! Managed by Slot #{slot} ({owner}).",
+      "created_by": 123456789
+    }
+  }
+}

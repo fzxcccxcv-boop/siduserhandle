@@ -294,7 +294,6 @@ async def api_send(
 
         if res.get("ok"):
             result = res.get("result", {})
-            # Cache Telegram Bot API file_id after first local upload
             if is_local and result.get("photo"):
                 cached_id = result["photo"][-1].get("file_id")
                 if cached_id:
@@ -303,7 +302,6 @@ async def api_send(
                     write_json(CONFIG_FILE, cfg)
             return result.get("message_id")
 
-    # Standard or fallback text message
     msg_payload: Dict[str, Any] = {
         "chat_id": peer_id,
         "text": html_text,
@@ -2876,9 +2874,48 @@ async def callback_router(event: events.CallbackQuery.Event) -> None:
 
 
 # ==============================================================================
-# ENTRYPOINT (AUTO-BOOT ACTIVE HOST WORKERS + BACKGROUND WATCHDOG)
+# HTTP HEALTH & PORT BINDING SERVER (FOR RENDER / WEB SERVICES)
+# ==============================================================================
+async def start_render_health_server() -> None:
+    port = int(os.environ.get("PORT", "10000"))
+
+    async def handle_client(
+        reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        try:
+            await reader.read(1024)
+            body = (
+                f"{BRAND} Userbot Handler Online | Workers: {count_running_workers()}"
+            ).encode("utf-8")
+            response = (
+                b"HTTP/1.1 200 OK\r\n"
+                b"Content-Type: text/plain; charset=utf-8\r\n"
+                + f"Content-Length: {len(body)}\r\n".encode("utf-8")
+                + b"Connection: close\r\n\r\n"
+                + body
+            )
+            writer.write(response)
+            await writer.drain()
+        except Exception:
+            pass
+        finally:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
+
+    server = await asyncio.start_server(handle_client, "0.0.0.0", port)
+    print(f"🌐 Health server listening on 0.0.0.0:{port}")
+    async with server:
+        await server.serve_forever()
+
+
+# ==============================================================================
+# ENTRYPOINT (PORT SERVER + AUTO-BOOT WORKERS + BACKGROUND WATCHDOG)
 # ==============================================================================
 async def main() -> None:
+    asyncio.create_task(start_render_health_server())
     print(f"🌸 Starting {BRAND} Userbot Handler...")
     await bot.start(bot_token=BOT_TOKEN)
     me = await bot.get_me()

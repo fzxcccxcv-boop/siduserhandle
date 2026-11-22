@@ -151,6 +151,7 @@ def build_userbot_client(session_str: str = "", timeout: int = 15) -> TelegramCl
         StringSession(session_str),
         API_ID,
         API_HASH,
+        loop=LOOP,
         device_model=CLIENT_DEVICE,
         system_version=CLIENT_SYSTEM,
         app_version=CLIENT_APP,
@@ -163,7 +164,7 @@ def build_userbot_client(session_str: str = "", timeout: int = 15) -> TelegramCl
 
 
 # ==============================================================================
-# AUTHORIZATION, RUNTIME WORKERS & STATE
+# AUTHORIZATION, RUNTIME WORKERS & STATE (PYTHON 3.14 EVENT LOOP SAFE)
 # ==============================================================================
 ensure_storage()
 CFG = read_json(CONFIG_FILE)
@@ -183,7 +184,9 @@ PENDING_LOGINS: Dict[Tuple[int, int], Dict[str, Any]] = {}
 ACTIVE_WORKERS: Dict[str, Dict[str, Any]] = {}
 START_TIME = time.time()
 
-bot = TelegramClient("sid_handler_bot", API_ID, API_HASH)
+LOOP = asyncio.new_event_loop()
+asyncio.set_event_loop(LOOP)
+bot = TelegramClient("sid_handler_bot", API_ID, API_HASH, loop=LOOP)
 
 
 # ==============================================================================
@@ -2934,4 +2937,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    LOOP.run_until_complete(main())
